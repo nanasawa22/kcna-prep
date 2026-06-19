@@ -2,6 +2,8 @@
 
 All notable changes to **KCNA Prep** are documented here.
 
+## [Unreleased]
+
 ## [1.8.1] - 2026-06-18
 
 ### Changed
