@@ -3,6 +3,10 @@
 All notable changes to **KCNA Prep** are documented here.
 
 ## [Unreleased]
+<!-- changelog:through db7fcc42b0d539c41bc9e810e04584c4bd783b36 -->
+
+- **Removed the Dependabot configuration (`.github/dependabot.yml`); automated version-update PRs are decommissioned.**
+  *Why:* A zero-build, zero-runtime-dep PWA has nothing for Dependabot to bump — it was opening PRs against dependencies we don't have. Retired the bot before it filed another "0 of 0 packages updated" report.
 
 ## [1.8.1] - 2026-06-18
 
