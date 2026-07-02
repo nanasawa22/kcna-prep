@@ -1,0 +1,20 @@
+# dev-cycle-profile.yml — the OPERATIONAL half of kcna-prep's dev-cycle profile.
+#
+# Repo-local + machine-readable so the wave-runner and slash commands run WITHOUT the personal vault
+# (CI, a container, or a collaborator's checkout). The PORTFOLIO half (status / version / distribution /
+# narrative) lives in the vault project index (~/seanyvault/projects/kcna-prep/index.md).
+# See ~/seanyvault/standards/dev-cycle/dev-cycle.md §8–9.
+
+build_cmd: ""                   # zero-build static PWA — nothing to compile; `make serve` runs it locally
+test_gate: make lint            # node --check every JS file + htmlhint index.html (no test suite yet)
+pre_push_hooks: []              # only the universal changelog hook; no project gate scripts
+review_tools: local 4-axis adversarial (Security·Edge·Logic·Regressions) + /code-review ultra (high-risk)
+model_tier_defaults:
+  deep: opus
+  build: sonnet
+  cheap: haiku
+layout: standard                # single-tree checkout; bare+worktree conversion is optional (~/seanyvault/standards/git-worktrees.md)
+adr_process: docs/adr/ (Nygard, number-at-commit, placeholder→promote)
+ai_runtime: none                # static offline-first app, no AI at runtime — change only via an ADR (~/seanyvault/standards/ai-runtime-policy.md)
+platform_floor: evergreen browsers (PWA + service worker) · Python 3 (dev server only)
+invariants_file: ""             # none — conventions live in AGENTS.md (offline-first, dependency-free)

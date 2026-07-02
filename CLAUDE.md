@@ -1,23 +1,21 @@
 # CLAUDE.md — KCNA Prep
 
-Offline-capable study app for the **Kubernetes & Cloud Native Associate (KCNA)** exam: notes, spaced-repetition flashcards, weighted mock exams, a readiness model, and an 11-week plan. Repo: `seanyfresh/kcna-prep`. Deploys to GitHub Pages / Netlify / Vercel.
+@AGENTS.md
 
-## Stack
-- Static, **zero-build** web app: vanilla HTML/CSS/JS + a service worker (`service-worker.js`) for offline/PWA. No bundler, no framework, no runtime npm deps.
-- `serve.py` — tiny zero-dependency Python 3 dev server that mirrors the production security headers.
-- Content/data in `data/`, UI assets in `assets/`, tooling in `tools/`, docs in `docs/`. Container serving via `Dockerfile` + `docker-compose.yml`.
+The portable project guide (stack, commands, conventions) lives in **`AGENTS.md`** (imported
+above) so non-Claude agents read the same playbook. This file adds only the Claude- /
+dev-cycle-specific bits.
 
-## Commands (Makefile)
-- `make serve` — run locally on :4178 and open the browser. Override port: `make serve PORT=9000`.
-- `make lint` — `node --check` every JS file + `htmlhint index.html`. Run before every commit.
-- `make links` — check markdown links (needs `lychee`).
-- `make up` / `make down` — `docker compose` up (detached) / down.
-- `make docker-build` / `make docker-run` — build / run the container image.
-- `make version` — print `VERSION`.
+## Dev cycle
+- **`ai_runtime: none`** — static offline-first PWA, no AI at runtime (see AGENTS.md);
+  changing that stance needs an ADR (`~/seanyvault/standards/ai-runtime-policy.md`).
+- Operational profile: repo-local `dev-cycle-profile.yml` (the build/test/gate/model values the
+  wave-runner and commands execute). Portfolio half: vault `~/seanyvault/projects/kcna-prep/index.md`.
+- **Model tiers:** 🧠 Deep = Opus (grill · sequence · draft-ADRs · review) · 🔨 Build = Sonnet
+  (implement · tests · fix loop) · ⚡ Cheap = Haiku (doc writing · `/document` · changelog).
+  Reviewer's tier ≥ the builder's.
+- **Commands:** `/start-dev` `/pr` `/document` (global, in `~/.claude/`). ADRs number-at-commit.
+- **Changelog:** the pre-push hook's generator is LLM-agnostic — set `$CHANGELOG_CMD` (alias
+  `$LLM_CLI`) to any LLM CLI; defaults to the `claude` CLI.
 
-## Conventions
-- Stay dependency-free and offline-first: nothing that requires a network at runtime or breaks the service worker / offline use.
-- When you change cached assets, bump `VERSION` and the service-worker cache name, or clients keep stale files.
-- Keep exam content accurate to the current KCNA curriculum; cite the source when changing facts.
-- Keep CI green (GitHub Actions: CI, CodeQL, Pages) — run `make lint` locally first.
-- Conventional Commits.
+See the global `~/.claude/CLAUDE.md` for the cross-project defaults this repo inherits.
