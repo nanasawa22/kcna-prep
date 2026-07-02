@@ -6,8 +6,14 @@
 # See ~/seanyvault/standards/dev-cycle/dev-cycle.md §8–9.
 
 build_cmd: ""                   # zero-build static PWA — nothing to compile; `make serve` runs it locally
-test_gate: make lint            # node --check every JS file + htmlhint index.html (no test suite yet)
-pre_push_hooks: []              # only the universal changelog hook; no project gate scripts
+test_gate: scripts/test-gate.sh # wraps `make lint`: node --check every JS file + htmlhint index.html (no test suite yet)
+pre_push_hooks: []              # no extra static gates; .githooks/pre-push is a thin shim over the canonical core (~/.claude/scripts/prepush-core.sh)
+tier: standard
+visibility: public
+max_fix_loops: 3
+qa_plan: "none — static PWA, GH Actions + manual smoke"
+ui_tests: "none"
+capabilities: []
 review_tools: local 4-axis adversarial (Security·Edge·Logic·Regressions) + /code-review ultra (high-risk)
 model_tier_defaults:
   deep: opus
