@@ -1,105 +1,19 @@
 #!/usr/bin/env bash
-#
-# Belt-and-suspenders: whenever something is pushed to `main`, make sure CHANGELOG.md
-# is current. If it isn't, this auto-writes entries in the project's house voice
-# (serious change + a genuinely-informative, playful "*Why:*"), commits them, and includes
-# them in the push — no prompts, no manual step. Uses the `claude` CLI for the voice; if
-# claude isn't available it blocks the push so entries get written properly first.
-#
-# Active via:   git config core.hooksPath .githooks
-# See standard: ~/seanyvault/standards/changelog.md
-#
-set -uo pipefail
+# .githooks/pre-push — thin per-repo shim; ALL logic lives in the canonical core.
+# Enable once: git config core.hooksPath .githooks
+set -euo pipefail
 
-# Avoid recursion: the inner re-push below sets this.
-[ "${CHANGELOG_HOOK_SKIP:-}" = "1" ] && exit 0
+export TEST_GATE="scripts/test-gate.sh"      # the repo's single test entry point (wraps `make lint`)
+export EXTRA_GATES=""                        # no static gates yet
+export FAST_PATH_PREFIXES="docs/:*.md"       # EXCLUSIVE touch of these skips TEST_GATE (docs lane)
+export ALWAYS_TEST=".githooks/:dev-cycle-profile.yml:Makefile"  # veto the fast path
+export SKIP_TESTS_ENV="KCNA_SKIP_TESTS"      # the repo's explicit skip var (loudly honored)
+# export CHANGELOG_CMD="claude -p"           # any LLM CLI reading the prompt on stdin
+# export CHANGELOG_AI_AUTHOR="Claude <noreply@anthropic.com>"
 
-remote="$1"
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
-cd "$repo_root" || exit 0
-changelog="CHANGELOG.md"
-zero="0000000000000000000000000000000000000000"
-
-# Find the ref/range being pushed to main (if any).
-pushing_main=0; local_sha=""; remote_sha=""
-while read -r _local_ref l_sha remote_ref r_sha; do
-  if [ "$remote_ref" = "refs/heads/main" ]; then
-    pushing_main=1; local_sha="$l_sha"; remote_sha="$r_sha"
-  fi
-done
-[ "$pushing_main" = "1" ] || exit 0
-[ "$local_sha" = "$zero" ] && exit 0   # deleting main — nothing to log
-
-if [ "$remote_sha" = "$zero" ]; then
-  base="$(git hash-object -t tree /dev/null)"   # remote has no main yet → empty tree
-  range="$local_sha"
-else
-  base="$remote_sha"
-  range="$remote_sha..$local_sha"
-fi
-
-# Already updated in this push? Then we're done.
-if ! git diff --quiet "$base" "$local_sha" -- "$changelog" 2>/dev/null; then
-  exit 0
-fi
-
-commits="$(git log --no-merges --pretty=format:'%s' "$range" 2>/dev/null)"
-[ -z "$commits" ] && exit 0
-
-echo "↪ CHANGELOG.md isn't updated for this push to main." >&2
-
-# --- Generate entries IN THE HOUSE VOICE via the claude CLI (no tone-less fallback). ---
-claude_bin="$(command -v claude 2>/dev/null || true)"
-for cand in "$HOME/.claude/local/claude" /opt/homebrew/bin/claude /usr/local/bin/claude "$HOME/.local/bin/claude"; do
-  [ -z "$claude_bin" ] && [ -x "$cand" ] && claude_bin="$cand"
-done
-
-entries=""
-if [ -n "$claude_bin" ]; then
-  timeout_bin="$(command -v timeout || command -v gtimeout || true)"
-  prompt="You maintain CHANGELOG.md for KCNA Prep. These commits are being pushed to main:
-
-$commits
-
-Write changelog entries for them in the project's house voice: a SERIOUS, accurate one-line description of the change in bold, then on the next line an italic \"*Why:*\" that is playful and self-deprecating but genuinely informative — keep the humor, but it must carry the real reason the change was made (so future-me remembers why and in what order), not just a joke. One bullet per notable change; skip pure chores. Output ONLY the markdown bullets — no preamble, no section headings, no closing remarks."
-  if [ -n "$timeout_bin" ]; then
-    entries="$("$timeout_bin" 180 "$claude_bin" -p "$prompt" 2>/dev/null || true)"
-  else
-    entries="$("$claude_bin" -p "$prompt" 2>/dev/null || true)"
-  fi
-fi
-
-if [ -z "$(printf '%s' "$entries" | tr -d '[:space:]')" ]; then
-  echo "" >&2
-  echo "  ✋ Push to main blocked: update CHANGELOG.md first." >&2
-  echo "     Add entries for this push in the house voice (serious change + a genuinely-informative *Why:*)," >&2
-  echo "     commit, and push again. (Couldn't auto-write in-voice — no \`claude\` CLI here.)" >&2
-  echo "" >&2
+core="$HOME/.claude/scripts/prepush-core.sh"
+if [ ! -x "$core" ]; then
+  echo "✋ pre-push: canonical core missing — install ~/.claude/scripts/prepush-core.sh" >&2
   exit 1
 fi
-
-# --- Insert under "## [Unreleased]" (robust; no shell interpolation into the editor). ---
-ENTRIES="$entries" CHANGELOG="$changelog" python3 - <<'PY' || exit 0
-import os
-path = os.environ["CHANGELOG"]
-entries = os.environ["ENTRIES"].rstrip()
-text = open(path, encoding="utf-8").read()
-marker = "## [Unreleased]\n"
-i = text.find(marker)
-if i == -1:
-    text = "## [Unreleased]\n\n" + entries + "\n\n" + text
-else:
-    j = i + len(marker)
-    text = text[:j] + "\n" + entries + "\n" + text[j:]
-open(path, "w", encoding="utf-8").write(text)
-PY
-
-git add "$changelog" || exit 0
-git commit --no-verify -m "Changelog: auto-update for push to main
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>" -- "$changelog" >/dev/null 2>&1 || exit 0
-
-# Include the new commit in this push: re-push (skipping this hook), then let the original proceed.
-CHANGELOG_HOOK_SKIP=1 git push "$remote" "HEAD:refs/heads/main" >&2 || true
-echo "✓ CHANGELOG.md updated and pushed to main." >&2
-exit 0
+exec "$core" "$@"   # stdin (the pushed-refs protocol) passes through
