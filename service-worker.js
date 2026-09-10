@@ -1,12 +1,16 @@
 /* KCNA Prep service worker — offline support.
  * Strategy:
  *   - Precache the full app shell + study content on install (works offline).
+ *   - Translated study-content packs (data/i18n/<lang>/) are deliberately NOT
+ *     precached: each is ~520 KB and only one language is ever needed. They are
+ *     fetched on demand and then kept by the cache-first rule below, so a user
+ *     who has browsed once in that language stays offline-capable.
  *   - Same-origin static assets: cache-first, fall back to network.
  *   - Navigations: network-first, fall back to cached index.html offline.
  *   - Google Fonts: stale-while-revalidate (so the app looks right offline too).
  * Bump CACHE when shipping new content so clients pick it up.
  */
-const CACHE = 'kcna-prep-v1.8.1';
+const CACHE = 'kcna-prep-v1.9.0';
 
 const PRECACHE = [
   './',
@@ -18,6 +22,7 @@ const PRECACHE = [
   './assets/js/data-registry.js',
   './assets/js/storage.js',
   './assets/js/i18n.js',
+  './assets/js/i18n-content.js',
   './assets/js/i18n/es.js',
   './assets/js/i18n/pt.js',
   './assets/js/i18n/fr.js',

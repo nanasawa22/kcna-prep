@@ -10,6 +10,7 @@ Offline-capable study app for the **Kubernetes & Cloud Native Associate (KCNA)**
 - Static, **zero-build** web app: vanilla HTML/CSS/JS + a service worker (`service-worker.js`) for offline/PWA. No bundler, no framework, no runtime npm deps.
 - `serve.py` — tiny zero-dependency Python 3 dev server that mirrors the production security headers.
 - Content/data in `data/`, UI assets in `assets/`, tooling in `tools/`, docs in `docs/` (ADRs in `docs/adr/`). Container serving via `Dockerfile` + `docker-compose.yml`.
+- **Two translation layers.** UI chrome: English-as-key packs in `assets/js/i18n/<code>.js`, all eagerly loaded from `index.html` (~45 KB each). Study content: `data/i18n/<code>/<part>.js`, fetched on demand by `assets/js/i18n-content.js` (~520 KB per language) and applied over the registered data objects, so render code stays untouched. Content translation is opt-in per user (Settings › Study content); English remains the default to match the English-only exam.
 - `dev-cycle-profile.yml` — the **operational** dev-cycle profile (the build / test / gate values automation reads); the portfolio half lives in the vault project index. See `~/seanyvault/standards/dev-cycle/dev-cycle.md` §8–9.
 
 ## Commands (Makefile)
@@ -19,6 +20,11 @@ Offline-capable study app for the **Kubernetes & Cloud Native Associate (KCNA)**
 - `make up` / `make down` — `docker compose` up (detached) / down.
 - `make docker-build` / `make docker-run` — build / run the container image.
 - `make version` — print `VERSION`.
+
+## Translation tooling (`tools/`)
+- **UI strings:** `extract-i18n.py` → `i18n-catalog.json`; `verify-packs.py` checks coverage, placeholders and HTML across the 9 packs.
+- **Study content:** `extract-content-catalog.py` → `content-catalog.json` (2,416 units keyed by `domain:…`/`glossary:…`/`reference:…`); translations are authored as flat `{key: text}` JSON under `tools/content-src/<lang>/`; `build-content-pack.py <lang>` assembles `data/i18n/<lang>/`; `content-batch.py <part> [kind]` prints the next untranslated slice.
+- **Gate:** `verify-content-packs.py` fails on a stale key, an HTML-tag mismatch, or a dropped Kubernetes/CNCF name, and warns on English words left in a translation. Run it after every pack rebuild.
 
 ## Conventions
 - Stay dependency-free and offline-first: nothing that requires a network at runtime or breaks the service worker / offline use.

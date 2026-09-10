@@ -4,8 +4,11 @@ window.Settings = (function () {
   const KEY = 'settings';
   // level: null until the user chooses; else none|light|heavy.
   // lang: null until the user chooses; else a code from I18n.LANGS (auto-detected).
+  // contentLang: 'en' keeps study content in English to match the English-only
+  //   exam (the historical behaviour); 'follow' translates it into the display
+  //   language when a content pack exists for it.
   // reportName / examBookedDate feed the manager progress report.
-  const DEFAULTS = { theme: 'auto', reducedMotion: 'auto', examDate: null, planStart: null, deadlineDismissed: false, level: null, lang: null, reportName: '', examBookedDate: null };
+  const DEFAULTS = { theme: 'auto', reducedMotion: 'auto', examDate: null, planStart: null, deadlineDismissed: false, level: null, lang: null, contentLang: 'en', reportName: '', examBookedDate: null };
   const mq = window.matchMedia('(prefers-color-scheme: light)');
   const listeners = [];
 
@@ -59,6 +62,12 @@ window.Settings = (function () {
     if (l && window.I18n && I18n.has(l)) return l;
     return window.I18n ? I18n.detect() : 'en';
   }
+
+  // Study-content language policy: 'en' (exam-faithful) or 'follow' the UI.
+  function contentLang() { return load().contentLang === 'follow' ? 'follow' : 'en'; }
+
+  // The language code the study content should actually be rendered in.
+  function contentLangEffective() { return contentLang() === 'follow' ? lang() : 'en'; }
 
   // Sync the active language + <html lang>/<dir> with the current setting.
   function applyLang() {
@@ -216,7 +225,8 @@ window.Settings = (function () {
 
   return {
     get, set, onChange, apply, applyTheme, applyMeta, applyLang, effectiveTheme,
-    examDate, planStart, level, lang, importFromText, resetProgress, resetAll,
+    examDate, planStart, level, lang, contentLang, contentLangEffective,
+    importFromText, resetProgress, resetAll,
     saveSession, loadSession, sessionFilename,
   };
 })();

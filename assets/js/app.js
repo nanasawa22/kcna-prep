@@ -766,11 +766,17 @@
       '</div>' +
 
       '<div class="card mt-lg"><h2>' + tr('Language') + '</h2>' +
-        '<p class="muted" style="margin-top:0">' + tr('Choose the language for the app interface. Study content stays in English to match the exam.') + '</p>' +
+        '<p class="muted" style="margin-top:0">' + tr('Choose the language for the app interface.') + '</p>' +
         '<div class="setting"><strong>' + tr('Display language') + '</strong>' +
           '<div class="seg" data-seg="lang">' + I18n.LANGS.map(function (o) {
             return '<button data-val="' + o.code + '" lang="' + o.code + '" class="' + (o.code === Settings.lang() ? 'active' : '') + '">' + esc(o.native) + '</button>';
-          }).join('') + '</div></div></div>' +
+          }).join('') + '</div></div>' +
+        (contentPackAvailable() ?
+          '<div class="setting"><div><strong>' + tr('Study content') + '</strong><div class="faint">' +
+            tr('The KCNA exam is in English, so notes, flashcards and questions stay in English by default. Translating them is a study aid — the exact English terms are still what you will see on exam day.') +
+          '</div></div>' +
+          seg('contentLang', Settings.contentLang(), [['en', 'English'], ['follow', 'Display language']]) + '</div>' : '') +
+        '</div>' +
 
       '<div class="card mt-lg"><h2>' + tr('Kubernetes experience') + '</h2>' +
         '<p class="muted" style="margin-top:0">' + tr('Tailors your study plan, flashcard default, and practice question difficulty.') + '</p>' +
@@ -809,7 +815,8 @@
     on('[data-seg="reducedMotion"] button', 'click', function () { Settings.set({ reducedMotion: this.getAttribute('data-val') }); viewSettings(); });
     on('[data-seg="deadlineWarn"] button', 'click', function () { Settings.set({ deadlineDismissed: this.getAttribute('data-val') === 'off' }); viewSettings(); });
     on('[data-seg="level"] button', 'click', function () { Settings.set({ level: this.getAttribute('data-val') }); updateChrome(); viewSettings(); });
-    on('[data-seg="lang"] button', 'click', function () { Settings.set({ lang: this.getAttribute('data-val') }); updateChrome(); viewSettings(); });
+    on('[data-seg="lang"] button', 'click', function () { Settings.set({ lang: this.getAttribute('data-val') }); updateChrome(); viewSettings(); syncContentLang(); });
+    on('[data-seg="contentLang"] button', 'click', function () { Settings.set({ contentLang: this.getAttribute('data-val') }); viewSettings(); syncContentLang(); });
 
     // dates
     $('#save-dates').addEventListener('click', function () {
@@ -993,6 +1000,24 @@
     const c = menu.querySelector('.cur') || menu.querySelector('button'); if (c) c.focus();
   }
 
+  // Does a translated study-content pack ship for the current display language?
+  // The Study-content setting only appears when the choice would do something.
+  function contentPackAvailable() {
+    return !!(window.ContentI18n && window.Settings && ContentI18n.shipsFor(Settings.lang()));
+  }
+
+  /* ---- Study-content language: load the pack, re-render if it changed ----
+   * Rendering is never blocked on the fetch — the chrome is already translated,
+   * so the page paints immediately and the study text swaps in when the pack
+   * lands (instantly on repeat visits: the service worker caches it). */
+  function syncContentLang() {
+    if (!window.ContentI18n || !window.Settings) return;
+    const before = ContentI18n.active();
+    ContentI18n.ensure(Settings.contentLangEffective()).then(function (now) {
+      if (now !== before) { updateChrome(); route(); }
+    });
+  }
+
   /* ================= LANGUAGE MENU ================= */
   function closeLangMenu() {
     const m = document.getElementById('lang-menu'); if (m) m.remove();
@@ -1027,7 +1052,7 @@
       const native = this.querySelector('strong').textContent;
       closeLangMenu();
       Settings.set({ lang: code });   // Settings.apply() syncs I18n + <html lang/dir>
-      updateChrome(); route();
+      updateChrome(); route(); syncContentLang();
       appToast(tr('Language') + ': ' + native);
     });
     setTimeout(function () { document.addEventListener('click', outsideLangClick); }, 0);
@@ -1618,4 +1643,5 @@
   if (window.Settings) Settings.apply();
   updateChrome();
   route();
+  syncContentLang();
 })();

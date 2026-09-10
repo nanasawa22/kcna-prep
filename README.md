@@ -37,8 +37,12 @@ Study notes · spaced-repetition flashcards · weighted mock exams · honest rea
 - **🌐 Multi-language interface** — the whole UI is available in **10 languages**
   (English, Español, Português, Français, Deutsch, Italiano, 简体中文, 日本語,
   हिन्दी, العربية, with right-to-left support for Arabic) via the 🌐 menu in the
-  top bar. Study **content stays in English** to match the English-only exam, so
-  you still practice the real terminology (Pod, Deployment, Ingress…).
+  top bar. Study **content stays in English by default** to match the English-only
+  exam, so you still practice the real terminology (Pod, Deployment, Ingress…).
+- **📚 Translated study content (日本語)** — the notes, flashcards, questions,
+  glossary and reference blurbs are also available in **Japanese**, opt-in under
+  *Settings › Language › Study content*. Kubernetes and CNCF names stay in English
+  even when translated, because that is what you will read on exam day.
 
 ### Also included
 
